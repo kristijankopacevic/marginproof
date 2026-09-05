@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discount Margin Guard — will your sale survive your costs?</title>
+<meta name="description" content="Enter the discounts you plan to run and see which products would sell below cost. Runs entirely in your browser — your cost data is never uploaded.">
+<style>
+  :root{--ink:#16211c;--muted:#5d6b64;--line:#e0e6e2;--bg:#fbfaf8;--card:#fff;
+        --accent:#1f6f4f;--soft:#eaf3ee;--loss:#a2342b;--losssoft:#fbecea;
+        --wrong:#8a6320;--wrongsoft:#fdf6e7;--risk:#3c5a86;--risksoft:#eef2f9}
+  *{box-sizing:border-box}
+  body{margin:0;font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+  header{padding:52px 0 22px}
+  .badge{display:inline-block;background:var(--soft);color:var(--accent);font-size:12.5px;
+         font-weight:650;padding:5px 11px;border-radius:999px}
+  h1{font-size:clamp(27px,4.4vw,38px);line-height:1.14;margin:16px 0 12px;letter-spacing:-.02em}
+  .lede{font-size:18px;color:var(--muted);max-width:60ch;margin:0}
+  h2{font-size:19px;margin:34px 0 10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px;margin:16px 0}
+  #drop{border:2px dashed var(--line);border-radius:12px;padding:32px 20px;text-align:center;
+        background:var(--card);cursor:pointer;transition:.15s}
+  #drop:hover,#drop.over{border-color:var(--accent);background:var(--soft)}
+  #drop b{display:block;font-size:17px;margin-bottom:4px}
+  #drop span{color:var(--muted);font-size:14px}
+  .row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:16px 0}
+  label{font-size:14px;color:var(--muted);display:block}
+  input[type=number],input[type=text]{font:inherit;padding:7px 9px;border:1px solid var(--line);
+    border-radius:6px;background:var(--card);color:var(--ink);width:110px}
+  button{font:inherit;padding:8px 15px;border-radius:7px;border:1px solid var(--accent);
+         background:var(--accent);color:#fff;cursor:pointer}
+  button.ghost{background:var(--card);color:var(--accent)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .chip{background:var(--soft);color:var(--accent);border-radius:999px;padding:4px 10px;font-size:13px;
+        display:flex;gap:7px;align-items:center}
+  .chip button{background:none;border:none;color:var(--accent);padding:0;font-size:15px;line-height:1;cursor:pointer}
+  .stats{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(148px,1fr))}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:14px}
+  .stat b{display:block;font-size:24px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .stat span{font-size:12.5px;color:var(--muted)}
+  .stat.bad b{color:var(--loss)}
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tag{display:inline-block;font-size:11px;font-weight:650;padding:2px 7px;border-radius:5px;white-space:nowrap}
+  .t-below{background:var(--losssoft);color:var(--loss)}
+  .t-under{background:var(--wrongsoft);color:var(--wrong)}
+  .t-thin{background:var(--risksoft);color:var(--risk)}
+  .t-fine{background:var(--soft);color:var(--accent)}
+  .t-unknown{background:var(--wrongsoft);color:var(--wrong)}
+  .note{background:var(--soft);border-radius:9px;padding:15px 17px;font-size:14.5px;margin:14px 0}
+  .warn{background:var(--losssoft);border:1px solid #f0c9c4;border-radius:9px;padding:15px 17px;font-size:15px;margin:14px 0}
+  .scroll{overflow-x:auto}
+  ul{padding-left:20px;margin:0 0 12px} li{margin:5px 0}
+  footer{border-top:1px solid var(--line);margin-top:48px;padding:24px 0 56px;color:var(--muted);font-size:13.5px}
+  a{color:var(--accent)}
+  @media (prefers-color-scheme:dark){
+    :root{--ink:#e9eeea;--muted:#98a69f;--line:#2a3531;--bg:#0f1513;--card:#161e1b;
+          --accent:#6ec69b;--soft:#163023;--loss:#e69187;--losssoft:#2c1a18;
+          --wrong:#d8b46a;--wrongsoft:#2a2317;--risk:#9db8dd;--risksoft:#1a222e}
+    button{color:#0f1613} .chip button{background:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="badge">Free · nothing is uploaded</span>
+  <h1>Will your sale survive your costs?</h1>
+  <p class="lede">Enter the discounts you plan to run. See exactly which products
+  would sell below cost — before the sale starts, not after.</p>
+</header>
+
+<div class="note">
+  <strong>Discounts combine on the reduced price, not by adding up.</strong>
+  A 25% code on top of a 20% automatic discount is <b>40% off</b>, not 45%. On a
+  £40 product costing £23 that leaves <b>£1 a unit</b> — before shipping, fees
+  and returns. That is the arithmetic this page does for your whole catalogue.
+</div>
+
+<div id="drop">
+  <b>Drop your product CSV here</b>
+  <span>or click to choose · Shopify or WooCommerce export · nothing leaves your browser</span>
+  <input type="file" id="file" accept=".csv,text/csv" hidden>
+</div>
+
+<div class="card">
+  <div class="row">
+    <div>
+      <label for="pct">Add a discount you plan to run</label>
+      <input type="number" id="pct" min="1" max="99" step="1" placeholder="25" value="25">
+    </div>
+    <button onclick="addPct()">Add discount</button>
+    <div>
+      <label for="target">Target margin</label>
+      <input type="number" id="target" value="30" min="0" max="99" step="1">
+    </div>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div id="stackline" style="color:var(--muted);font-size:14px"></div>
+</div>
+
+<div id="out"></div>
+
+<div class="card">
+  <h2 style="margin-top:0">How it works</h2>
+  <ul>
+    <li><b>Break-even discount</b> — the discount at which a product earns exactly
+        nothing. It is the same number as its margin.</li>
+    <li><b>Safe ceiling</b> — the deepest site-wide discount that keeps every
+        priced product above cost. It is set by your thinnest product, not the average.</li>
+    <li><b>Stacking</b> — each discount applies to the already-reduced price, so
+        they compound rather than add.</li>
+  </ul>
+  <h2>What it will not do</h2>
+  <ul>
+    <li>It will not guess a missing cost. Products with no cost are reported as
+        <em>cannot tell</em> and left out of the totals — never assumed safe.</li>
+    <li>It will not tell you your total loss. A product export contains no sales
+        volumes, so every figure here is <b>per unit</b>.</li>
+    <li>It does not read or change your store. It only reads a file you chose.</li>
+  </ul>
+  <p style="color:var(--muted);font-size:14px;margin:0">
+    Also on this site: <a href="./">MarginProof</a> — the full catalogue audit
+    for products losing money today.</p>
+</div>
+
+<footer>
+  <p>Independent, and not affiliated with Shopify, WooCommerce or any platform.
+  Reads a file you select and never transmits it.</p>
+</footer>
+
+</div>
+
+<script type="module">
+import { parseCsv, toRows } from './src/audit.js';
+import { auditDiscount, OUTCOME } from './src/discount.js';
+
+const $ = id => document.getElementById(id);
+let rows = null, platform = '', pcts = [25, 20];
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const TAG = {
+  [OUTCOME.BELOW_COST]: 't-below', [OUTCOME.UNDER_TARGET]: 't-under',
+  [OUTCOME.THIN]: 't-thin', [OUTCOME.FINE]: 't-fine', [OUTCOME.UNKNOWN]: 't-unknown',
+};
+
+window.addPct = () => {
+  const v = Number($('pct').value);
+  if (v > 0 && v < 100) { pcts.push(v); render(); }
+};
+window.removePct = i => { pcts.splice(i, 1); render(); };
+
+function chips() {
+  $('chips').innerHTML = pcts.length
+    ? pcts.map((p, i) => `<span class="chip">${p}% off
+        <button onclick="removePct(${i})" title="remove">&times;</button></span>`).join('')
+    : '<span style="color:var(--muted);font-size:14px">No discounts added — the table still shows where each product breaks even.</span>';
+}
+
+function render() {
+  chips();
+  const target = Math.max(0, Math.min(99, Number($('target').value) || 0)) / 100;
+  if (!rows) {
+    const stack = pcts.reduce((r, p) => r * (1 - p / 100), 1);
+    $('stackline').innerHTML = pcts.length
+      ? `Together these are <b>${((1 - stack) * 100).toFixed(1)}% off</b>, not ${pcts.reduce((a, b) => a + b, 0)}%.`
+      : '';
+    return;
+  }
+
+  const { stack, findings, summary } = auditDiscount(rows, pcts, { targetMargin: target });
+  $('stackline').innerHTML = pcts.length
+    ? `Together these are <b>${(stack * 100).toFixed(1)}% off</b>, not ${pcts.reduce((a, b) => a + b, 0)}%.`
+    : '';
+
+  const ceiling = summary.safeCeiling;
+  const alarm = summary.belowCost > 0
+    ? `<div class="warn"><strong>${summary.belowCost} product(s) would sell below cost
+       at ${(stack * 100).toFixed(1)}% off.</strong>
+       ${ceiling !== null ? `The deepest discount that keeps every priced product above cost is
+       <b>${(ceiling * 100).toFixed(1)}%</b>.` : ''}</div>` : '';
+
+  $('out').innerHTML = `
+    <div class="stats">
+      <div class="stat"><b>${(stack * 100).toFixed(1)}%</b><span>actual discount</span></div>
+      <div class="stat ${summary.belowCost ? 'bad' : ''}"><b>${summary.belowCost}</b><span>below cost</span></div>
+      <div class="stat"><b>${summary.underTarget}</b><span>under target margin</span></div>
+      <div class="stat"><b>${ceiling === null ? '—' : (ceiling * 100).toFixed(1) + '%'}</b><span>safe ceiling</span></div>
+      <div class="stat"><b>${summary.unknown}</b><span>cannot tell (no cost)</span></div>
+    </div>
+    ${alarm}
+    <h2>Every product at ${(stack * 100).toFixed(1)}% off</h2>
+    <div class="card" style="padding:0"><div class="scroll"><table>
+      <thead><tr><th>Outcome</th><th>Product</th><th>What happens</th>
+        <th style="text-align:right">Sale price</th><th style="text-align:right">Per unit</th>
+        <th style="text-align:right">Break-even</th></tr></thead>
+      <tbody>${findings.slice(0, 300).map(f => `<tr>
+        <td><span class="tag ${TAG[f.outcome]}">${esc(f.outcome)}</span></td>
+        <td><b>${esc(f.label)}</b>${f.sku ? `<br><span style="color:var(--muted);font-size:12.5px">${esc(f.sku)}</span>` : ''}</td>
+        <td>${esc(f.detail)}</td>
+        <td class="n">${f.discountedPrice.toFixed(2)}</td>
+        <td class="n" style="${f.unitProfit !== null && f.unitProfit < 0 ? 'color:var(--loss);font-weight:650' : ''}">
+          ${f.unitProfit === null ? '<span style="color:var(--wrong);font-style:italic">unknown</span>' : f.unitProfit.toFixed(2)}</td>
+        <td class="n">${f.breakEven === null ? '—' : (f.breakEven * 100).toFixed(1) + '%'}</td>
+      </tr>`).join('')}</tbody></table></div></div>
+    ${findings.length > 300 ? `<p style="color:var(--muted);font-size:13.5px">Showing the first 300 of ${findings.length}.</p>` : ''}
+    <div class="row"><button onclick="window.__dl()">Download as CSV</button>
+      <button class="ghost" onclick="window.print()">Print / save as PDF</button></div>
+    <div class="note" style="font-size:14px"><strong>Every figure is per unit.</strong>
+      A product export has no sales volumes in it, so this page cannot and will not
+      tell you what a sale would cost you in total.</div>`;
+
+  window.__dl = () => {
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = ['SKU,Product,Outcome,Price,Cost,Sale price,Per unit,Break-even %,Max discount for target %']
+      .concat(findings.map(f => [f.sku, f.label, f.outcome, f.price, f.cost,
+        f.discountedPrice, f.unitProfit,
+        f.breakEven === null ? '' : (f.breakEven * 100).toFixed(1),
+        f.maxDiscount === null ? '' : (f.maxDiscount * 100).toFixed(1)].map(q).join(',')))
+      .join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'discount-margin-check.csv';
+    a.click();
+  };
+}
+
+function load(text) {
+  const parsed = toRows(parseCsv(text));
+  rows = parsed.rows; platform = parsed.platform;
+  if (!rows.length) {
+    $('out').innerHTML = '<div class="warn"><strong>No product rows found.</strong> '
+      + 'Check this is the product export rather than an orders file.</div>';
+    rows = null; return;
+  }
+  render();
+}
+
+const drop = $('drop');
+drop.onclick = () => $('file').click();
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => {
+  e.preventDefault(); drop.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f) { const r = new FileReader(); r.onload = () => load(r.result); r.readAsText(f); }
+};
+$('file').onchange = e => {
+  const f = e.target.files[0];
+  if (f) { const r = new FileReader(); r.onload = () => load(r.result); r.readAsText(f); }
+};
+$('target').oninput = render;
+$('pct').onkeydown = e => { if (e.key === 'Enter') addPct(); };
+
+render();
+</script>
+</body>
+</html>
