@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://kristijankopacevic.github.io/marginproof/sitemap.xml
