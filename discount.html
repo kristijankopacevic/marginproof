@@ -146,6 +146,7 @@
 <script type="module">
 import { parseCsv, toRows } from './src/audit.js';
 import { auditDiscount, OUTCOME } from './src/discount.js';
+import { csvText, csvNumber, buildCsv } from './src/csv.js';
 
 const $ = id => document.getElementById(id);
 let rows = null, platform = '', pcts = [25, 20];
@@ -223,13 +224,14 @@ function render() {
       tell you what a sale would cost you in total.</div>`;
 
   window.__dl = () => {
-    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const csv = ['SKU,Product,Outcome,Price,Cost,Sale price,Per unit,Break-even %,Max discount for target %']
-      .concat(findings.map(f => [f.sku, f.label, f.outcome, f.price, f.cost,
-        f.discountedPrice, f.unitProfit,
-        f.breakEven === null ? '' : (f.breakEven * 100).toFixed(1),
-        f.maxDiscount === null ? '' : (f.maxDiscount * 100).toFixed(1)].map(q).join(',')))
-      .join('\n');
+    // SKU, product and outcome are merchant text: formula-safe text cells.
+    // Every money and percentage figure is computed here: numeric cells.
+    const csv = buildCsv(['SKU', 'Product', 'Outcome', 'Price', 'Cost', 'Sale price', 'Per unit',
+                          'Break-even %', 'Max discount for target %'],
+      findings.map(f => [csvText(f.sku), csvText(f.label), csvText(f.outcome),
+        csvNumber(f.price), csvNumber(f.cost), csvNumber(f.discountedPrice), csvNumber(f.unitProfit),
+        csvNumber(f.breakEven === null ? '' : (f.breakEven * 100).toFixed(1)),
+        csvNumber(f.maxDiscount === null ? '' : (f.maxDiscount * 100).toFixed(1))]));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = 'discount-margin-check.csv';

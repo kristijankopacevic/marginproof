@@ -1,0 +1,4 @@
+Handle,Title,Variant SKU,Variant Price,Cost per item,Variant Inventory Qty,Status
+evil-candle,"=HYPERLINK(""http://evil.example"",""click me"")","+cmd|' /C calc'!A0",10.00,12.00,5,active
+minus-candle,-1+1,@SUM(A1:A9),20.00,8.00,3,active
+plain-candle,Plain candle,SKU-PLAIN,15.00,,2,active

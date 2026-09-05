@@ -138,6 +138,7 @@
 
 <script type="module">
 import { parseCsv, toRows, auditRows, auditSupplierChange, auditCatalogueDrift, summarise } from './src/audit.js';
+import { csvText, csvNumber, buildCsv } from './src/csv.js';
 
 const $ = id => document.getElementById(id);
 let productRows = null, supplierRows = null, platform = '';
@@ -234,10 +235,11 @@ function render() {
   // Only the rows a merchant has to act on, in the shape a bulk editor accepts.
   window.__dlAction = () => {
     const act = findings.filter(f => f.suggestedPrice);
-    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const csv = ['SKU,Current price,New cost,Suggested price,Reason']
-      .concat(act.map(f => [f.sku, f.currentPrice, f.newCost, f.suggestedPrice, f.detail].map(q).join(',')))
-      .join('\n');
+    // SKU and reason come from the merchant's file: text cells, formula-safe.
+    // Prices are computed here: numeric cells.
+    const csv = buildCsv(['SKU', 'Current price', 'New cost', 'Suggested price', 'Reason'],
+      act.map(f => [csvText(f.sku), csvNumber(f.currentPrice), csvNumber(f.newCost),
+                    csvNumber(f.suggestedPrice), csvText(f.detail)]));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = 'marginproof-reprice-list.csv';
@@ -247,12 +249,11 @@ function render() {
   window.__dl = () => {
     const head = ['severity', 'check', 'sku', 'product', 'detail', 'per_unit', 'per_unit_note',
                   'current_price', 'new_cost', 'suggested_price', 'action'];
-    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const csv = [head.join(',')].concat(findings.map(f =>
-      [f.severity, f.check, f.sku, f.label, f.detail,
-       f.atStake === null ? 'unknown' : f.atStake, f.atStakeNote,
-       f.currentPrice ?? '', f.newCost ?? '', f.suggestedPrice ?? '',
-       f.action ?? ''].map(q).join(','))).join('\n');
+    const csv = buildCsv(head, findings.map(f =>
+      [csvText(f.severity), csvText(f.check), csvText(f.sku), csvText(f.label), csvText(f.detail),
+       f.atStake === null ? csvText('unknown') : csvNumber(f.atStake), csvText(f.atStakeNote),
+       csvNumber(f.currentPrice ?? ''), csvNumber(f.newCost ?? ''), csvNumber(f.suggestedPrice ?? ''),
+       csvText(f.action ?? '')]));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = 'marginproof-findings.csv';
