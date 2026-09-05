@@ -67,45 +67,16 @@ scored as zero.**
   export contains no sales volumes, so MarginProof will not invent an annual
   figure from one.
 
-## PayoutProof — `payouts.html`
+## PayoutProof has moved
 
-The third tool on this site takes a different file: the **Shopify Payments
-balance-transactions export** (Finance › Payouts › View transactions › Export)
-and, optionally, the **payouts export** (one row per payout). It groups every
-transaction under its payout, adds up gross charges, refunds, adjustments,
-disputes and fees in integer cents, shows both Σ(Amount − Fee) and Σ(Net), and —
-when the payouts export is present — reports each payout as **MATCHED** or as an
-exact signed **DIFFERENCE** against the total Shopify reported.
-
-What it refuses to do is as important as what it does:
-
-- **UNKNOWN is not ZERO.** A missing column or unreadable cell is
-  `NOT_AVAILABLE_FROM_SOURCE`, never 0, and a payout with an unknown operand is
-  `INCOMPLETE_SOURCE`, never "reconciled".
-- **Matching fails safe.** Payout ID when both files carry it; otherwise date +
-  currency only when exactly one candidate exists. Two payouts on the same day
-  in the same currency are `AMBIGUOUS_MATCH`, never pick-first. Bank Reference is
-  displayed, never used as identity.
-- **Types are mapped by an explicit table.** An unlisted `Type` value is counted
-  under "other" and raised as a finding rather than guessed.
-- **No VAT, tax or accounting treatment.** The `VAT` column, if present, is passed
-  through exactly as exported and enters no arithmetic. PayoutProof organises and
-  reconciles source data; it does not post to QuickBooks or Xero, match bank
-  statements, or give accounting or tax advice.
-- **Provenance on every amount.** The detail export carries source file, row,
-  column, raw value, normalised value and transformation.
-
-Engine: `src/payouts.js`; typed CSV cells: `src/csv.js`; tests:
-`tests/payouts.test.mjs` and `tests/csv.test.mjs` with synthetic fixtures under
-`tests/fixtures/payouts/`. Demo data (clearly marked) lives in
-`src/payouts-sample.js` and, byte-identical, in `docs/sample/`.
-
-**Privacy claim, stated precisely:** your uploaded Shopify CSV files are
-processed locally in your browser; PayoutProof does not upload the contents of
-those files to a server. Loading the page fetches its own HTML and JavaScript
-like any website; after that, selecting, reconciling and exporting files makes
-no network request at all — verified in a real browser session before release.
-Nothing is stored; reloading the page erases everything.
+PayoutProof — Shopify payout reconciliation from the Shopify Payments CSV
+exports — was first published on this site as `payouts.html` on 2026-09-05 and
+now lives in its own repository and at its own address:
+**https://kristijankopacevic.github.io/payoutproof/** (source:
+github.com/kristijankopacevic/payoutproof). The old `payouts.html` here is a
+redirect page and processes no files. The typed-CSV-cell code in `src/csv.js`
+that both sites use stays here because it protects the exports of the two
+tools on this site.
 
 ## Supported files
 
@@ -125,7 +96,7 @@ open index.html          # that's it
 Tests:
 
 ```
-npm test                 # 101 tests across four suites, no dependencies
+npm test                 # 53 tests across three suites, no dependencies
 ```
 
 There are no dependencies, no build step and no toolchain. `src/audit.js` is a
