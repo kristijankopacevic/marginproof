@@ -23,6 +23,7 @@ const FORMULA_TRIGGER = /^\s*[=+\-@\t\r]/;
 const NUMERIC_LITERAL = /^-?\d+(\.\d+)?$/;
 // Control characters other than tab, newline and carriage return are stripped;
 // tab and CR are kept so the trigger check above can neutralise them.
+// eslint-disable-next-line no-control-regex -- stripping control characters is the point
 const STRIP_CONTROL = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g;
 
 /** Untrusted or free text → quoted, formula-neutralised CSV cell. */
