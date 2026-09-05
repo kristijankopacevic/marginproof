@@ -1,0 +1,10 @@
+{
+  "name": "marginproof",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser-only margin and catalogue audit for store CSV exports. Cost data never leaves the browser.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  }
+}

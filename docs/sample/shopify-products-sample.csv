@@ -1,0 +1,11 @@
+Handle,Title,Option1 Value,Variant SKU,Variant Price,Variant Compare At Price,Cost per item,Status,Variant Inventory Qty
+lavender-soap,Lavender Soap,Bar,SOAP-LAV,7.50,9.00,3.10,active,42
+lavender-soap,Lavender Soap,Gift box,SOAP-LAV-GB,14.00,14.00,6.20,active,8
+amber-candle,Amber Candle,200g,CAN-AMB-200,24.00,,26.50,active,15
+amber-candle,Amber Candle,400g,CAN-AMB-400,38.00,45.00,,active,6
+coffee-northbeam,Northbeam Coffee,250g,COF-NB-250,12.00,,8.90,active,0
+coffee-northbeam,Northbeam Coffee,1kg,COF-NB-1000,38.00,,26.00,active,22
+mug-kilnwork,Kilnwork Mug,Standard,MUG-KW,18.00,,7.40,active,30
+mug-kilnwork,Kilnwork Mug Second,Standard,MUG-KW,16.00,,7.40,active,4
+serum-avenqua,Avenqua Serum,30ml,SER-AV-30,45.00,,,active,12
+gift-set,Winter Gift Set,,GIFT-WIN,0.00,,18.00,active,5

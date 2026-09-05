@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarginProof — find the products losing you money</title>
+<meta name="description" content="Drop in your store's CSV export and see which products sell below cost, which have no cost recorded, and which your profit reports silently ignore. Runs entirely in your browser.">
+<style>
+  :root{--ink:#16211c;--muted:#5d6b64;--line:#e0e6e2;--bg:#fbfaf8;--card:#fff;
+        --accent:#1f6f4f;--soft:#eaf3ee;--loss:#a2342b;--losssoft:#fbecea;
+        --wrong:#8a6320;--wrongsoft:#fdf6e7;--risk:#3c5a86;--risksoft:#eef2f9}
+  *{box-sizing:border-box}
+  body{margin:0;font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+  header{padding:56px 0 26px}
+  .badge{display:inline-block;background:var(--soft);color:var(--accent);font-size:12.5px;
+         font-weight:650;padding:5px 11px;border-radius:999px;letter-spacing:.01em}
+  h1{font-size:clamp(28px,4.6vw,40px);line-height:1.14;margin:18px 0 12px;letter-spacing:-.021em}
+  .lede{font-size:18px;color:var(--muted);max-width:62ch;margin:0}
+  h2{font-size:19px;margin:38px 0 10px;letter-spacing:-.01em}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px;margin:16px 0}
+  #drop{border:2px dashed var(--line);border-radius:12px;padding:38px 20px;text-align:center;
+        background:var(--card);cursor:pointer;transition:.15s}
+  #drop:hover,#drop.over{border-color:var(--accent);background:var(--soft)}
+  #drop b{display:block;font-size:17px;margin-bottom:5px}
+  #drop span{color:var(--muted);font-size:14px}
+  .row{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:14px 0}
+  label{font-size:14px;color:var(--muted)}
+  input[type=number]{font:inherit;width:74px;padding:6px 8px;border:1px solid var(--line);
+                     border-radius:6px;background:var(--card);color:var(--ink)}
+  button{font:inherit;padding:8px 15px;border-radius:7px;border:1px solid var(--accent);
+         background:var(--accent);color:#fff;cursor:pointer}
+  button.ghost{background:var(--card);color:var(--accent)}
+  .stats{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:14px}
+  .stat b{display:block;font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .stat span{font-size:12.5px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tag{display:inline-block;font-size:11px;font-weight:650;padding:2px 7px;border-radius:5px;white-space:nowrap}
+  .t-loss{background:var(--losssoft);color:var(--loss)}
+  .t-wrong{background:var(--wrongsoft);color:var(--wrong)}
+  .t-risk{background:var(--risksoft);color:var(--risk)}
+  .unknown{color:var(--wrong);font-style:italic}
+  .note{background:var(--soft);border-radius:9px;padding:15px 17px;font-size:14.5px;margin:14px 0}
+  .warn{background:var(--wrongsoft);border:1px solid #f0e2c0;border-radius:9px;padding:15px 17px;font-size:14.5px}
+  ul{padding-left:20px;margin:0 0 12px} li{margin:5px 0}
+  footer{border-top:1px solid var(--line);margin-top:52px;padding:24px 0 56px;color:var(--muted);font-size:13.5px}
+  .scroll{overflow-x:auto}
+  @media (prefers-color-scheme:dark){
+    :root{--ink:#e9eeea;--muted:#98a69f;--line:#2a3531;--bg:#0f1513;--card:#161e1b;
+          --accent:#6ec69b;--soft:#163023;--loss:#e69187;--losssoft:#2c1a18;
+          --wrong:#d8b46a;--wrongsoft:#2a2317;--risk:#9db8dd;--risksoft:#1a222e}
+    button{color:#0f1613}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="badge">Free · nothing is uploaded</span>
+  <h1>Find the products losing you money.</h1>
+  <p class="lede">Drop in the CSV your store already exports. MarginProof shows which
+  products sell below cost, which have no cost recorded — and are therefore missing
+  from your profit reports entirely — and which are quietly wrong.</p>
+</header>
+
+<div class="note">
+  <strong>Your cost data never leaves your computer.</strong> This page does the whole
+  audit in your browser. There is no account, no upload and no server — you can turn
+  off your internet after the page loads and it still works.
+</div>
+
+<div id="drop">
+  <b>Drop your product CSV here</b>
+  <span>or click to choose · Shopify or WooCommerce product export · nothing is sent anywhere</span>
+  <input type="file" id="file" accept=".csv,text/csv" hidden>
+</div>
+
+<div class="row">
+  <label>Target margin <input type="number" id="target" value="30" min="0" max="99" step="1">%</label>
+  <label style="flex:1">
+    <span style="display:block;margin-bottom:4px">Optional: a new supplier price list, to see which margins moved</span>
+    <input type="file" id="supplier" accept=".csv,text/csv">
+  </label>
+</div>
+
+<div id="out"></div>
+
+<div class="card" id="about">
+  <h2 style="margin-top:0">What it checks</h2>
+  <ul>
+    <li><b>Below cost</b> — sells for less than it costs you.</li>
+    <li><b>No cost recorded</b> — the platform drops these from profit reports, so your
+        profit looks better than it is.</li>
+    <li><b>Under your target margin</b>.</li>
+    <li><b>Price inversions</b> — a "compare at" price that is not actually higher.</li>
+    <li><b>Published but out of stock</b> — customers can order what you cannot ship.</li>
+    <li><b>Duplicate SKUs</b>, especially at different prices.</li>
+    <li><b>Supplier price changes</b> — which products' margins moved, and which now lose money.</li>
+  </ul>
+  <h2>What it will not do</h2>
+  <ul>
+    <li>It will not guess a missing cost. A product with no cost is reported as
+        <em>unknown</em> and left out of the totals — never counted as free.</li>
+    <li>It will not change anything in your store. It only reads a file you chose.</li>
+    <li>There is no AI in the arithmetic. Every figure is plain deterministic calculation
+        you could redo by hand.</li>
+  </ul>
+</div>
+
+<footer>
+  <p>MarginProof is independent and not affiliated with Shopify, WooCommerce or any
+  platform. It reads a file you select and never transmits it.</p>
+  <p>Early version. If it gets something wrong on your catalogue, that is worth
+  knowing — the checks are deliberately strict rather than reassuring.</p>
+</footer>
+
+</div>
+
+<script type="module">
+import { parseCsv, toRows, auditRows, auditSupplierChange, auditCatalogueDrift, summarise } from './src/audit.js';
+
+const $ = id => document.getElementById(id);
+let productRows = null, supplierRows = null, platform = '';
+
+const pct = v => v === null ? '<span class="unknown">unknown</span>' : (v * 100).toFixed(1) + '%';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const TAG = { 'losing money': 't-loss', 'reported wrong': 't-wrong', 'needs checking': 't-risk' };
+
+function readFile(f, then) {
+  const r = new FileReader();
+  r.onload = () => then(r.result);
+  r.readAsText(f);
+}
+
+function loadProducts(text) {
+  const parsed = toRows(parseCsv(text));
+  productRows = parsed.rows; platform = parsed.platform;
+  if (!productRows.length) {
+    $('out').innerHTML = '<div class="warn"><strong>No product rows found.</strong> '
+      + 'The file parsed but nothing looked like a product. Check it is the product '
+      + 'export rather than an orders or payout file.</div>';
+    return;
+  }
+  if (parsed.columns.price === undefined) {
+    $('out').innerHTML = '<div class="warn"><strong>No price column found.</strong> '
+      + 'MarginProof looked for a column named Price, Variant Price or Regular price and '
+      + 'found none, so it stopped rather than guess. Detected columns: '
+      + esc(parsed.header.join(', ')) + '</div>';
+    return;
+  }
+  render();
+}
+
+function render() {
+  if (!productRows) return;
+  const target = Math.max(0, Math.min(99, Number($('target').value) || 0)) / 100;
+  let findings = auditRows(productRows, { targetMargin: target });
+  if (supplierRows) {
+    findings = findings.concat(
+      auditSupplierChange(productRows, supplierRows, { targetMargin: target }),
+      auditCatalogueDrift(productRows, supplierRows));
+  }
+  const s = summarise(productRows, findings);
+
+  const coverageWarning = s.costCoverage !== null && s.costCoverage < 1
+    ? `<div class="warn"><strong>${s.missingCost} of ${s.rows} products have no cost recorded.</strong>
+       Every margin figure below is calculated only on the ${s.withCost} that do. Those
+       missing products are also the ones your platform's profit report leaves out, which
+       is why its profit number can look healthier than the business is.</div>` : '';
+
+  const rows = findings.slice(0, 300).map(f => `<tr>
+      <td><span class="tag ${TAG[f.severity]}">${esc(f.severity)}</span></td>
+      <td><b>${esc(f.label)}</b>${f.sku ? `<br><span style="color:var(--muted);font-size:12.5px">${esc(f.sku)}</span>` : ''}</td>
+      <td>${esc(f.detail)}</td>
+      <td class="n">${f.suggestedPrice
+        ? `<b>${f.suggestedPrice.toFixed(2)}</b><br><span style="color:var(--muted);font-size:11.5px">suggested price</span>`
+        : (f.action ? `<span style="color:var(--muted);font-size:12px">${esc(f.action)}</span>` : '—')}</td>
+      <td class="n">${f.atStake === null
+        ? '<span class="unknown">unknown</span>'
+        : f.atStake.toFixed(2)}<br><span style="color:var(--muted);font-size:11.5px">${esc(f.atStakeNote)}</span></td>
+    </tr>`).join('');
+
+  $('out').innerHTML = `
+    <div class="stats">
+      <div class="stat"><b>${s.rows}</b><span>products read (${esc(platform)})</span></div>
+      <div class="stat"><b>${s.findings}</b><span>findings</span></div>
+      <div class="stat"><b>${s.costCoverage === null ? '—' : (s.costCoverage * 100).toFixed(0) + '%'}</b><span>have a cost recorded</span></div>
+      <div class="stat"><b>${pct(s.medianMargin)}</b><span>median margin</span></div>
+      <div class="stat"><b>${s.knownAtStake.toFixed(2)}</b><span>per-unit exposure found</span></div>
+    </div>
+    ${coverageWarning}
+    ${findings.length === 0
+      ? '<div class="note"><strong>Nothing flagged.</strong> No product in this file sells below cost, '
+        + 'misses a cost, inverts its compare-at price, duplicates a SKU or falls under your target margin. '
+        + 'That is a real result, not an error.</div>'
+      : `<h2>Findings — biggest money first</h2>
+         <div class="card" style="padding:0"><div class="scroll"><table>
+         <thead><tr><th>Type</th><th>Product</th><th>What is wrong</th><th style="text-align:right">Action</th><th style="text-align:right">Per unit</th></tr></thead>
+         <tbody>${rows}</tbody></table></div></div>
+         ${findings.length > 300 ? `<p style="color:var(--muted);font-size:13.5px">Showing the first 300 of ${findings.length}. Download for the rest.</p>` : ''}
+         ${findings.some(f => f.suggestedPrice)
+           ? `<div class="note"><strong>${findings.filter(f => f.suggestedPrice).length} product(s) need repricing.</strong>
+              The suggested price is what restores your ${(target * 100).toFixed(0)}% target at the new cost —
+              plain arithmetic, not a recommendation about what the market will bear.</div>` : ''}
+         <div class="row"><button onclick="window.__dl()">Download findings as CSV</button>
+         ${findings.some(f => f.suggestedPrice)
+           ? '<button onclick="window.__dlAction()">Download reprice list only</button>' : ''}
+         <button class="ghost" onclick="window.print()">Print / save as PDF</button></div>
+         <div class="note" style="font-size:14px"><strong>The per-unit column is per unit sold</strong>,
+         not a total — MarginProof cannot know your sales volumes from a product export, and it will
+         not invent them.</div>`}
+  `;
+
+  // Only the rows a merchant has to act on, in the shape a bulk editor accepts.
+  window.__dlAction = () => {
+    const act = findings.filter(f => f.suggestedPrice);
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = ['SKU,Current price,New cost,Suggested price,Reason']
+      .concat(act.map(f => [f.sku, f.currentPrice, f.newCost, f.suggestedPrice, f.detail].map(q).join(',')))
+      .join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'marginproof-reprice-list.csv';
+    a.click();
+  };
+
+  window.__dl = () => {
+    const head = ['severity', 'check', 'sku', 'product', 'detail', 'per_unit', 'per_unit_note',
+                  'current_price', 'new_cost', 'suggested_price', 'action'];
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = [head.join(',')].concat(findings.map(f =>
+      [f.severity, f.check, f.sku, f.label, f.detail,
+       f.atStake === null ? 'unknown' : f.atStake, f.atStakeNote,
+       f.currentPrice ?? '', f.newCost ?? '', f.suggestedPrice ?? '',
+       f.action ?? ''].map(q).join(','))).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'marginproof-findings.csv';
+    a.click();
+  };
+}
+
+const drop = $('drop');
+drop.onclick = () => $('file').click();
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => {
+  e.preventDefault(); drop.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f) readFile(f, loadProducts);
+};
+$('file').onchange = e => { const f = e.target.files[0]; if (f) readFile(f, loadProducts); };
+$('supplier').onchange = e => {
+  const f = e.target.files[0];
+  if (f) readFile(f, t => { supplierRows = toRows(parseCsv(t)).rows; render(); });
+};
+$('target').oninput = render;
+</script>
+</body>
+</html>

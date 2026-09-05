@@ -1,0 +1,6 @@
+node_modules/
+*.log
+.DS_Store
+# Never commit a real merchant catalogue
+docs/customer/
+*-real.csv
